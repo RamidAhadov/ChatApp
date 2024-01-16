@@ -1,6 +1,9 @@
 using Autofac;
+using ChatApp.Business.Abstraction;
+using ChatApp.Business.Concrete;
 using ChatApp.Configuration;
 using ChatApp.Configuration.Abstraction;
+using ChatApp.Configuration.ConfigParameters;
 using Microsoft.Extensions.Configuration;
 
 namespace ChatApp.Business.DependencyResolvers.Autofac;
@@ -18,5 +21,15 @@ public class AutofacBusinessModule:Module
 
         builder.RegisterType<Configs>().As<IConfig>();
         builder.RegisterType<Configs>();
+
+        builder.Register(c =>
+            {
+                var configuration = c.Resolve<IConfiguration>();
+                var serverParameters = configuration.GetSection("ServerParameters").Get<ServerParameters>();
+                return serverParameters;
+            })
+            .As<IConnectionParameter>().SingleInstance();
+        
+        builder.RegisterType<ServerConnectionService>().As<IConnectionService>();
     }
 }

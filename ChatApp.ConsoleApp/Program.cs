@@ -29,8 +29,6 @@ static async Task SendRequest()
         var request = new HttpRequestMessage(HttpMethod.Get, url);
 
         HttpResponseMessage response = await client.SendAsync(request);
-        
-        HttpResponseMessage response1 = await client.GetAsync(url);
 
         if (response.IsSuccessStatusCode)
         {

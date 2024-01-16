@@ -5,4 +5,5 @@ namespace ChatApp.Configuration.Abstraction;
 public interface IConfig
 {
     TestText? TestText();
+    ServerParameters? ServerParameters();
 }
