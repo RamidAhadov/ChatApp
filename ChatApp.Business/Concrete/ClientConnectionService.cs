@@ -19,12 +19,17 @@ public class ClientConnectionService:IConnectionService
     {
         string serverIp = _connectionParameter.Ip;
         int port = _connectionParameter.Port;
+        
+        while(true)
+        {
+            using (TcpClient client = new TcpClient(serverIp, port))
+            {
+                Console.WriteLine($"Connected to server at {serverIp}:{port}");
 
-        TcpClient client = new TcpClient(serverIp, port);
-        Console.WriteLine($"Connected to server at {serverIp}:{port}");
-
-        await Task.Run(() => ReceiveData(client));
-        await Task.Run(() => SendData(client));
+                await Task.Run(() => ReceiveData(client));
+                await Task.Run(() => SendData(client));
+            }
+        }
 
         Console.ReadLine();
     }
