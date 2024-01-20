@@ -5,7 +5,7 @@ using ChatApp.Configuration.Abstraction;
 
 namespace ChatApp.Business.Concrete;
 
-public class ClientConnectionService:IConnectionService
+public class ClientConnectionService:IClientConnectionService
 {
     private IConnectionParameter _connectionParameter;
 

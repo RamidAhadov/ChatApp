@@ -16,14 +16,14 @@ var path = scope.Resolve<Configs>();
 
 await SendRequest();
 
-// Console.WriteLine(path.TestText()?.Name);
-// Console.WriteLine(path.TestText()?.Surname); 
-// Console.WriteLine(path.TestText()?.Family);
+Task.Run(ReadLineAsync);
+
+await ReceiveMessages();
 
 static async Task SendRequest()
 {
     const string url = "http://localhost:5195/api/Test/getString";
-    
+
     using (HttpClient client = new HttpClient())
     {
         var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -42,6 +42,51 @@ static async Task SendRequest()
     }
 }
 
+static async Task ReceiveMessagesAsync()
+{
+    const string url = "http://localhost:5195/api/Test/getMessagesAsync";
+    using (var client = new HttpClient())
+    {
+        //client.Timeout = TimeSpan.FromSeconds(500);
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        var response = await client.SendAsync(request);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine(await response.Content.ReadAsStringAsync());
+        }
+        else
+        {
+            Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+        }
+    }
+}
+
+async Task ReceiveMessages()
+{
+    while (true)
+    {
+        //Timeout (100 sec)
+        await ReceiveMessagesAsync();
+    }
+}
+
+void ReadLine()
+{
+    while (true)
+    {
+        Console.ReadLine();
+    }
+}
+
+Task ReadLineAsync()
+{
+    while (true)
+    {
+        Console.ReadLine();
+    }
+}
 
 
 //Console.WriteLine(IPAddress.Any);

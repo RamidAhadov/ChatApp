@@ -1,6 +1,6 @@
 namespace ChatApp.Business.Abstraction;
 
-public interface IConnectionService
+public interface IClientConnectionService
 {
     Task EstablishConnection();
 }

@@ -7,102 +7,87 @@ using ChatApp.Configuration.Abstraction;
 
 namespace ChatApp.Business.Concrete;
 
-public class ServerConnectionService:IConnectionService
+public class ServerConnectionService:IServerConnectionService
 {
     private readonly IConnectionParameter _parameter;
     private static List<TcpClient> _clients;
     static TcpListener _tcpListener;
+    //private static object lockObject = new object();
 
     public ServerConnectionService(IConnectionParameter parameter)
     {
         _parameter = parameter;
     }
     
-    public async Task EstablishConnection()
+    public void EstablishConnection()
     {
-        IPAddress ipAddress = IPAddress.Parse(_parameter.Ip);
+        string ipv4 = GetIPv4Address();
+        IPAddress ipAddress = IPAddress.Parse(ipv4);
         int port = _parameter.Port;
         
-        //var ipAddr = LocalIpAddress();
-        //var publicIp = await GetPublicIpAddressAsync();
         _tcpListener = new TcpListener(ipAddress, port);
         _tcpListener.Start();
 
         Console.WriteLine($"Server started on {ipAddress}:{port}");
-
-        while (true)
-        {
-            await Task.Run(ReadDataFromClientAsync);
-        }
-        // ReSharper disable once FunctionNeverReturns
     }
 
-    private async Task ReadDataFromClientAsync()
+    public async Task<string?> SendMessageAsync(string message, TcpClient sender)
+    {
+        foreach (var client in _clients)
+        {
+            if (client != sender)
+            {
+                NetworkStream stream = client.GetStream();
+                byte[] data = Encoding.UTF8.GetBytes(message);
+                
+                await stream.WriteAsync(data, 0, data.Length); //Test with multi user
+            }
+        }
+
+        return message;
+    }
+    public async Task<string?> GetMessagesAsync()
     {
         Socket client = await _tcpListener.AcceptSocketAsync();
         Console.WriteLine("New connection accepted");
-        while (true)
-        {
+        string result = null;
+        // while (true)
+        // {
 
             byte[] data = new byte[100];
-            int size = await client.ReceiveAsync(data);
-            for (int i = 0; i < size; i++)
-            {
-                Console.Write(Convert.ToChar(data[i]));
-            }
+            await client.ReceiveAsync(data);
 
-            Console.WriteLine();
-        }
+            // if (size == 0)
+            //     break;
+            result = Encoding.UTF8.GetString(data);
+        //}
+
+        return result;
     }
 
-    private static IPAddress? LocalIpAddress()
+    static string GetIPv4Address()
     {
-        if (!NetworkInterface.GetIsNetworkAvailable())
-            return null;
+        NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
 
-        var host = Dns.GetHostEntry(Dns.GetHostName());
-        foreach (var ipAddress in host.AddressList)
+        foreach (NetworkInterface networkInterface in networkInterfaces)
         {
-            if (ipAddress.AddressFamily == AddressFamily.InterNetwork)
+            if (networkInterface.OperationalStatus == OperationalStatus.Up &&
+                networkInterface.NetworkInterfaceType != NetworkInterfaceType.Loopback)
             {
-                return ipAddress;
+                IPInterfaceProperties ipProperties = networkInterface.GetIPProperties();
+                UnicastIPAddressInformationCollection unicastAddresses = ipProperties.UnicastAddresses;
+
+                foreach (UnicastIPAddressInformation unicastAddress in unicastAddresses)
+                {
+                    if (unicastAddress.Address.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        return unicastAddress.Address.ToString();
+                    }
+                }
             }
         }
 
         return null;
-        //return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
     }
-
-    private static void Broadcast(string message, TcpClient senderClient)
-    {
-        foreach (var client in _clients)
-        {
-            if (client != senderClient)
-            {
-                NetworkStream stream = client.GetStream();
-                byte[] data = Encoding.UTF8.GetBytes(message);
-                stream.Write(data, 0, data.Length);
-            }
-        }
-    }
-
-    static async Task<IPAddress> GetPublicIpAddressAsync()
-    {
-        using (var client = new HttpClient())
-        {
-            try
-            {
-                string response = await client.GetStringAsync("https://httpbin.org/ip");
-                string publicIp = response.Split('"')[3];
-                return IPAddress.Parse(publicIp);
-            }
-            catch (HttpRequestException e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-        }
-    }
-    
     
 }
