@@ -11,7 +11,8 @@ public class ServerConnectionService:IServerConnectionService
 {
     private readonly IConnectionParameter _parameter;
     private static List<TcpClient> _clients;
-    static TcpListener _tcpListener;
+
+    private static TcpListener? _tcpListener;
     //private static object lockObject = new object();
 
     public ServerConnectionService(IConnectionParameter parameter)
@@ -43,26 +44,30 @@ public class ServerConnectionService:IServerConnectionService
                 await stream.WriteAsync(data, 0, data.Length); //Test with multi user
             }
         }
-
+        
         return message;
     }
     public async Task<string?> GetMessagesAsync()
     {
-        Socket client = await _tcpListener.AcceptSocketAsync();
-        Console.WriteLine("New connection accepted");
-        string result = null;
-        // while (true)
-        // {
-
+        try
+        {
+            Socket client = await _tcpListener.AcceptSocketAsync();
+            Console.WriteLine("New connection accepted");
             byte[] data = new byte[100];
+        
             await client.ReceiveAsync(data);
 
-            // if (size == 0)
-            //     break;
-            result = Encoding.UTF8.GetString(data);
-        //}
+            string result = Encoding.UTF8.GetString(data);
+        
+            client.Close();
 
-        return result;
+            return result;
+        }
+        catch (Exception e)
+        {
+            return $"An error occured: {e.Message}";
+        }
+        
     }
 
     static string GetIPv4Address()

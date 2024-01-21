@@ -31,6 +31,8 @@ public class AutofacBusinessModule:Module
             .As<IConnectionParameter>().SingleInstance();
         
         builder.RegisterType<ServerConnectionService>().As<IServerConnectionService>();
+        builder.RegisterType<ServerConnectionService>();
+        
         builder.RegisterType<ClientConnectionService>().As<IClientConnectionService>();
     }
 }

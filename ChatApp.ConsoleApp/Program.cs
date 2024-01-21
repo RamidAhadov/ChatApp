@@ -1,92 +1,38 @@
-﻿using System.Net;
-using System.Runtime.CompilerServices;
-using Autofac;
+﻿using Autofac;
+using ChatApp.Business.Abstraction;
 using ChatApp.Business.DependencyResolvers.Autofac;
-using ChatApp.Configuration;
 
-var builder = new ContainerBuilder(); 
+namespace ChatApp.ConsoleApp;
 
-builder.RegisterModule(new AutofacBusinessModule());
-
-var container = builder.Build();
-
-var scope = container.BeginLifetimeScope();
-
-var path = scope.Resolve<Configs>();
-
-await SendRequest();
-
-Task.Run(ReadLineAsync);
-
-await ReceiveMessages();
-
-static async Task SendRequest()
+internal class Program
 {
-    const string url = "http://localhost:5195/api/Test/getString";
-
-    using (HttpClient client = new HttpClient())
+    private static IServerConnectionService _serverConnectionService;
+    static async Task Main(string[] args)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-        HttpResponseMessage response = await client.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
-        {
-            Console.WriteLine(await response.Content.ReadAsStringAsync());
-        }
-
-        else
-        {
-            Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-        }
-    }
-}
-
-static async Task ReceiveMessagesAsync()
-{
-    const string url = "http://localhost:5195/api/Test/getMessagesAsync";
-    using (var client = new HttpClient())
-    {
-        //client.Timeout = TimeSpan.FromSeconds(500);
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-        var response = await client.SendAsync(request);
         
-        if (response.IsSuccessStatusCode)
+        var builder = new ContainerBuilder(); 
+    
+        builder.RegisterModule(new AutofacBusinessModule());
+    
+        var container = builder.Build();
+
+        await using var scope = container.BeginLifetimeScope();
+
+        _serverConnectionService = scope.Resolve<IServerConnectionService>();
+
+        _serverConnectionService.EstablishConnection();
+
+        await Task.Run(ReceiveMessages);
+        
+        // ReSharper disable once FunctionNeverReturns
+    }
+    
+
+    static async Task ReceiveMessages()
+    {
+        while (true)
         {
-            Console.WriteLine(await response.Content.ReadAsStringAsync());
-        }
-        else
-        {
-            Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+            Console.WriteLine(await _serverConnectionService.GetMessagesAsync());
         }
     }
 }
-
-async Task ReceiveMessages()
-{
-    while (true)
-    {
-        //Timeout (100 sec)
-        await ReceiveMessagesAsync();
-    }
-}
-
-void ReadLine()
-{
-    while (true)
-    {
-        Console.ReadLine();
-    }
-}
-
-Task ReadLineAsync()
-{
-    while (true)
-    {
-        Console.ReadLine();
-    }
-}
-
-
-//Console.WriteLine(IPAddress.Any);
