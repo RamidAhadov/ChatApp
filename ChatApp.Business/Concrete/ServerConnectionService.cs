@@ -32,22 +32,19 @@ public class ServerConnectionService:IServerConnectionService
 
     public async Task<string?> SendMessageAsync(string message)
     {
-        byte[] data = Encoding.UTF8.GetBytes(message);
+        var data = Encoding.UTF8.GetBytes(message);
         foreach (var client in _clients!)
         {
-            // if (client != sender)
-            // {
-                await client.SendAsync(data);
-            //}
+            await client.SendAsync(data);
         }
         
         return message;
     }
-    public async Task<string?> GetMessagesAsync()
+    public async Task<string?> GetMessagesAsync() //bug
     {
+        using var client = await _tcpListener.AcceptSocketAsync();
         try
         {
-            using var client = await _tcpListener.AcceptSocketAsync();
             Console.WriteLine("New connection accepted");
             
             AddClients(client);
@@ -57,13 +54,12 @@ public class ServerConnectionService:IServerConnectionService
             await client.ReceiveAsync(data);
 
             string result = Encoding.UTF8.GetString(data);
-        
-            client.Close();
 
             return result;
         }
         catch (Exception e)
         {
+            client.Close();
             return $"An error occured: {e.InnerException.Message}";
         }
         

@@ -61,7 +61,6 @@ internal class Program
     }
 
     static async Task SendMessagesAsync()
-    
     {
         Console.WriteLine("Send "+Thread.CurrentThread.ManagedThreadId);
         while (true)

@@ -46,35 +46,39 @@ public class ClientConnectionService:IClientConnectionService
     {
         var stream = client.GetStream();
         
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-
-        string receivedData = null;
+        var reader = new StreamReader(stream, Encoding.UTF8);
+    
+        string? receivedData = null;
         
-        try
+        while (true)
         {
-            receivedData = await reader.ReadLineAsync();
+            char[] buffer = new char[1024];
+            int bytesRead = await reader.ReadAsync(buffer, 0, buffer.Length);
+    
+            if (bytesRead == 0)
+            {
+                continue;
+            }
+    
+            receivedData = new string(buffer, 0, bytesRead);
+            break;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred while reading data: {ex.Message}");
-        }
-        finally
-        {
-            client.Close();
-        }
-
+    
+        Console.WriteLine("Message received: " + receivedData);
         return receivedData;
     }
+    
+    
 
     static async Task SendData(TcpClient client,string message)
     {
-        // while (true)
-        // {
-            Console.WriteLine("Enter a message: ");
+        Console.WriteLine("Enter a message: ");
 
-            NetworkStream stream = client.GetStream();
-            byte[] data = Encoding.UTF8.GetBytes(message);
-            await stream.WriteAsync(data, 0, data.Length);
-        //}
+        NetworkStream stream = client.GetStream();
+        byte[] data = Encoding.UTF8.GetBytes(message);
+        await stream.WriteAsync(data, 0, data.Length);
+        await stream.FlushAsync();
+        Console.WriteLine("Bura isledi :)");
+        
     }
 }
