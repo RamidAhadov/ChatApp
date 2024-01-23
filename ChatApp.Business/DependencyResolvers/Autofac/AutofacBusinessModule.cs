@@ -30,9 +30,13 @@ public class AutofacBusinessModule:Module
             })
             .As<IConnectionParameter>().SingleInstance();
         
+        builder.RegisterType<ServerConnectionService>().Named<IConnectionService>("Server");
+        builder.RegisterType<ClientConnectionService>().Named<IConnectionService>("Client");
+        
         builder.RegisterType<ServerConnectionService>().As<IServerConnectionService>();
-        builder.RegisterType<ServerConnectionService>();
         
         builder.RegisterType<ClientConnectionService>().As<IClientConnectionService>();
+        
+        builder.RegisterType<CheckPortService>().As<ICheckPortService>();
     }
 }

@@ -7,6 +7,7 @@ namespace ChatApp.Business.Concrete;
 
 public class ClientConnectionService:IClientConnectionService
 {
+    private TcpClient _client;
     private IConnectionParameter _connectionParameter;
 
     public ClientConnectionService(IConnectionParameter connectionParameter)
@@ -14,49 +15,66 @@ public class ClientConnectionService:IClientConnectionService
         _connectionParameter = connectionParameter;
     }
 
-    //Split receive data and send data methods to 2 different method.
-    public async Task EstablishConnection()
+    public void EstablishConnection()
     {
-        string serverIp = _connectionParameter.Ip;
-        int port = _connectionParameter.Port;
+        Console.WriteLine("IP:");
+        string? serverIp = Console.ReadLine();
+        Console.WriteLine("Port:");
+        int port = int.Parse(Console.ReadLine() ?? string.Empty);
+
+        if (serverIp == null)
+        {
+            throw new ArgumentNullException(nameof(serverIp));
+        }
+        _client = new TcpClient(serverIp, port);
+    }
+
+    public async Task<string?> GetMessagesAsync()
+    {
+        Console.WriteLine("GetMessagesAsync");
+        return await ReceiveData(_client);
+    }
+
+    public async Task<string?> SendMessageAsync(string message)
+    {
+        Console.WriteLine("SendMessagesAsync");
+        await SendData(_client,message);
+        return message;
+    }
+
+    private static async Task<string> ReceiveData(TcpClient client)
+    {
+        var stream = client.GetStream();
         
-        while(true)
-        {
-            using (TcpClient client = new TcpClient(serverIp, port))
-            {
-                Console.WriteLine($"Connected to server at {serverIp}:{port}");
+        using var reader = new StreamReader(stream, Encoding.UTF8);
 
-                await Task.Run(() => ReceiveData(client));
-                await Task.Run(() => SendData(client));
-            }
+        string receivedData = null;
+        
+        try
+        {
+            receivedData = await reader.ReadLineAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while reading data: {ex.Message}");
+        }
+        finally
+        {
+            client.Close();
         }
 
-        Console.ReadLine();
-    }
-    
-    static async Task ReceiveData(TcpClient client)
-    {
-        NetworkStream stream = client.GetStream();
-        byte[] buffer = new byte[1024];
-        int bytesRead;
-
-        while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-        {
-            string dataReceived = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            Console.WriteLine($"Received data from server: {dataReceived}");
-        }
+        return receivedData;
     }
 
-    static async Task SendData(TcpClient client)
+    static async Task SendData(TcpClient client,string message)
     {
-        while (true)
-        {
-            Console.Write("Enter a message: ");
-            string message = Console.ReadLine();
+        // while (true)
+        // {
+            Console.WriteLine("Enter a message: ");
 
             NetworkStream stream = client.GetStream();
             byte[] data = Encoding.UTF8.GetBytes(message);
             await stream.WriteAsync(data, 0, data.Length);
-        }
+        //}
     }
 }

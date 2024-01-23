@@ -3553,6 +3553,7 @@
         "dependencies": {
           "Autofac": "7.1.0",
           "ChatApp.Configuration": "1.0.0",
+          "ChatApp.Core": "1.0.0",
           "Microsoft.Extensions.Configuration": "8.0.0",
           "Microsoft.Extensions.Configuration.Json": "8.0.0"
         },
@@ -3575,6 +3576,16 @@
         },
         "runtime": {
           "bin/placeholder/ChatApp.Configuration.dll": {}
+        }
+      },
+      "ChatApp.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v7.0",
+        "compile": {
+          "bin/placeholder/ChatApp.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/ChatApp.Core.dll": {}
         }
       }
     }
@@ -10699,6 +10710,11 @@
       "type": "project",
       "path": "../ChatApp.Configuration/ChatApp.Configuration.csproj",
       "msbuildProject": "../ChatApp.Configuration/ChatApp.Configuration.csproj"
+    },
+    "ChatApp.Core/1.0.0": {
+      "type": "project",
+      "path": "../ChatApp.Core/ChatApp.Core.csproj",
+      "msbuildProject": "../ChatApp.Core/ChatApp.Core.csproj"
     }
   },
   "projectFileDependencyGroups": {
