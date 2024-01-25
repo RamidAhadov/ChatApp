@@ -79,6 +79,5 @@ public class ClientConnectionService:IClientConnectionService
         await stream.WriteAsync(data, 0, data.Length);
         await stream.FlushAsync();
         Console.WriteLine("Bura isledi :)");
-        
     }
 }

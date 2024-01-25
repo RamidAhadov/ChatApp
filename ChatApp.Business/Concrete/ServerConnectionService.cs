@@ -13,6 +13,7 @@ public class ServerConnectionService:IServerConnectionService
     private List<Socket>? _clients;
     private TcpListener? _tcpListener;
 #pragma warning restore CS0649
+    //private static object _lockObject = new object();
 
     public ServerConnectionService(IConnectionParameter parameter)
     {
@@ -40,30 +41,53 @@ public class ServerConnectionService:IServerConnectionService
         
         return message;
     }
-    public async Task<string?> GetMessagesAsync() //bug
+    
+    //Must return a string which will be written on ConsoleApp.
+    //There is a bug, when accept second client then infinite loop starts.
+    public async Task<string?> GetMessagesAsync()
     {
-        using var client = await _tcpListener.AcceptSocketAsync();
+        Console.WriteLine("Before accept socket");
+        var client = await _tcpListener.AcceptSocketAsync();
+        Console.WriteLine("After accept socket");
+        
+        
+        Console.WriteLine("New connection accepted");
+
+        while (true)
+        {
+            await Task.Run(() => ReceiveMessages(client));
+        }
+        return null;
+    }
+
+    private async Task<string?> ReceiveMessages(Socket client)
+    {
         try
         {
-            Console.WriteLine("New connection accepted");
-            
             AddClients(client);
 
             byte[] data = new byte[100];
-        
-            await client.ReceiveAsync(data);
 
-            string result = Encoding.UTF8.GetString(data);
+            int bytesRead = await client.ReceiveAsync(data, SocketFlags.None);
+            Console.WriteLine("Received async!");
 
-            return result;
+            if (bytesRead > 0)
+            {
+                string result = Encoding.UTF8.GetString(data, 0, bytesRead);
+                Console.WriteLine(result);
+                return result;
+            }
+
+            return "null";
         }
         catch (Exception e)
         {
-            client.Close();
-            return $"An error occured: {e.InnerException.Message}";
+            Console.WriteLine($"An error occurred: {e.Message}");
+            client.Dispose();
+            return null;
         }
-        
     }
+
 
     private void AddClients(Socket client)
     {
