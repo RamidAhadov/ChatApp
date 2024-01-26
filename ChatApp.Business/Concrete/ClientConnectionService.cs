@@ -29,15 +29,16 @@ public class ClientConnectionService:IClientConnectionService
         _client = new TcpClient(serverIp, port);
     }
 
-    public async Task<string?> GetMessagesAsync()
+    //Locking due to yield keyword
+    public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
-        Console.WriteLine("GetMessagesAsync");
-        return await ReceiveData(_client);
+        //Console.WriteLine("GetMessagesAsync");
+        yield return await ReceiveData(_client);
     }
 
     public async Task<string?> SendMessageAsync(string message)
     {
-        Console.WriteLine("SendMessagesAsync");
+        //Console.WriteLine("SendMessagesAsync");
         await SendData(_client,message);
         return message;
     }
@@ -48,7 +49,7 @@ public class ClientConnectionService:IClientConnectionService
         
         var reader = new StreamReader(stream, Encoding.UTF8);
     
-        string? receivedData = null;
+        string? receivedData;
         
         while (true)
         {
@@ -64,20 +65,18 @@ public class ClientConnectionService:IClientConnectionService
             break;
         }
     
-        Console.WriteLine("Message received: " + receivedData);
+        //Console.WriteLine("Message received: " + receivedData);
         return receivedData;
     }
-    
-    
 
     static async Task SendData(TcpClient client,string message)
     {
-        Console.WriteLine("Enter a message: ");
+        //Console.WriteLine("Enter a message: ");
 
         NetworkStream stream = client.GetStream();
         byte[] data = Encoding.UTF8.GetBytes(message);
         await stream.WriteAsync(data, 0, data.Length);
         await stream.FlushAsync();
-        Console.WriteLine("Bura isledi :)");
+        //Console.WriteLine("Bura isledi :)");
     }
 }

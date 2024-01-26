@@ -54,9 +54,9 @@ internal class Program
     static async Task ReceiveMessagesAsync()
     {
         Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
-        while (true)
+        await foreach (var message in _connectionService.GetMessagesAsync())
         {
-            Console.WriteLine(await _connectionService.GetMessagesAsync());
+            Console.WriteLine(message);
         }
     }
 

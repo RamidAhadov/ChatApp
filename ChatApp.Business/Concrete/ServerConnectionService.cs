@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Channels;
 using ChatApp.Business.Abstraction;
 using ChatApp.Configuration.Abstraction;
 using ChatApp.Core.Utilities.Protocols;
@@ -41,23 +42,16 @@ public class ServerConnectionService:IServerConnectionService
         
         return message;
     }
-    
-    //Must return a string which will be written on ConsoleApp.
-    //There is a bug, when accept second client then infinite loop starts.
-    public async Task<string?> GetMessagesAsync()
+
+    public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
-        Console.WriteLine("Before accept socket");
         var client = await _tcpListener.AcceptSocketAsync();
-        Console.WriteLine("After accept socket");
-        
-        
-        Console.WriteLine("New connection accepted");
 
         while (true)
         {
-            await Task.Run(() => ReceiveMessages(client));
+            yield return await Task.Run(() => ReceiveMessages(client));
         }
-        return null;
+        // ReSharper disable once IteratorNeverReturns
     }
 
     private async Task<string?> ReceiveMessages(Socket client)
@@ -69,15 +63,16 @@ public class ServerConnectionService:IServerConnectionService
             byte[] data = new byte[100];
 
             int bytesRead = await client.ReceiveAsync(data, SocketFlags.None);
-            Console.WriteLine("Received async!");
+            //Console.WriteLine("Received async!");
 
             if (bytesRead > 0)
             {
                 string result = Encoding.UTF8.GetString(data, 0, bytesRead);
-                Console.WriteLine(result);
+                //Console.WriteLine(result);
                 return result;
             }
 
+            await client.DisconnectAsync(false);
             return "null";
         }
         catch (Exception e)
