@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using ChatApp.Business.Abstraction;
@@ -35,7 +36,13 @@ public class ClientConnectionService:IClientConnectionService
         //Console.WriteLine("GetMessagesAsync");
         while (true)
         {
-            yield return await ReceiveData(_client);
+            if (_client.Connected)
+            {
+                yield return await ReceiveData(_client);
+                break;
+            }
+
+            yield return "Disconnected";
         }
         // ReSharper disable once IteratorNeverReturns
     }
@@ -66,10 +73,10 @@ public class ClientConnectionService:IClientConnectionService
             }
     
             receivedData = new string(buffer, 0, bytesRead);
+            //receivedData = ((IPEndPoint)client.Client.RemoteEndPoint).Address.MapToIPv4() + ": " + receivedData;
             break;
         }
     
-        //Console.WriteLine("Message received: " + receivedData);
         return receivedData;
     }
 
@@ -83,4 +90,6 @@ public class ClientConnectionService:IClientConnectionService
         await stream.FlushAsync();
         //Console.WriteLine("Bura isledi :)");
     }
+    
+    //private string GetSenderIP()
 }

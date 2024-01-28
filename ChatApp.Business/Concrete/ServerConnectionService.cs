@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Channels;
@@ -34,6 +35,7 @@ public class ServerConnectionService:IServerConnectionService
 
     public async Task<string?> SendMessageAsync(string message)
     {
+        message = ((IPEndPoint)_tcpListener.LocalEndpoint).Address.MapToIPv4() + ": " + message;
         var data = Encoding.UTF8.GetBytes(message);
         foreach (var client in _clients!)
         {
@@ -54,6 +56,7 @@ public class ServerConnectionService:IServerConnectionService
             while (connected)
             {
                 var message = await Task.Run(() => ReceiveMessages(client));
+                message = ((IPEndPoint)client.RemoteEndPoint).Address + ": " + message;
                 if (message == null)
                 {
                     //Try to remove "connected" variable
