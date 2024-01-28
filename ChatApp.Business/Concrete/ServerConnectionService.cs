@@ -43,13 +43,28 @@ public class ServerConnectionService:IServerConnectionService
         return message;
     }
 
+    
+    //Server do not accepts second client.
+    //Might be due to multithreading issue.
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
-        var client = await _tcpListener.AcceptSocketAsync();
-
-        while (true)
+        bool connected = true;
+        using (var client = await _tcpListener.AcceptSocketAsync())
         {
-            yield return await Task.Run(() => ReceiveMessages(client));
+            while (connected)
+            {
+                var message = await Task.Run(() => ReceiveMessages(client));
+                if (message == null)
+                {
+                    //Try to remove "connected" variable
+                    _clients.Remove(client);
+                    connected = false; break;
+                }
+                else
+                {
+                    yield return message;
+                }
+            }
         }
         // ReSharper disable once IteratorNeverReturns
     }
@@ -63,7 +78,7 @@ public class ServerConnectionService:IServerConnectionService
             byte[] data = new byte[100];
 
             int bytesRead = await client.ReceiveAsync(data, SocketFlags.None);
-            //Console.WriteLine("Received async!");
+            Console.WriteLine("Received async!");
 
             if (bytesRead > 0)
             {

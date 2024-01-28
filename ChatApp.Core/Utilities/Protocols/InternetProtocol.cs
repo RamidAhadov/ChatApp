@@ -14,7 +14,7 @@ public static class InternetProtocol
         foreach (var networkInterface in networkInterfaces)
         {
             if (networkInterface.OperationalStatus == OperationalStatus.Up &&
-                networkInterface.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                networkInterface.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
             {
                 var ipProperties = networkInterface.GetIPProperties();
                 var uniCastAddresses = ipProperties.UnicastAddresses;
@@ -28,6 +28,7 @@ public static class InternetProtocol
                 }
             }
         }
+
 
         throw new InternetProtocolException();
     }

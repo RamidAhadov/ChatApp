@@ -27,7 +27,7 @@ internal class Program
 
         var condition = _portService.IsListening(_connectionParameter.Port);
 
-        if (condition)
+        if (!condition)
         {
             _connectionService = scope.ResolveNamed<IConnectionService>("Server");
             

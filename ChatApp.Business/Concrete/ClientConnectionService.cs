@@ -33,7 +33,11 @@ public class ClientConnectionService:IClientConnectionService
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
         //Console.WriteLine("GetMessagesAsync");
-        yield return await ReceiveData(_client);
+        while (true)
+        {
+            yield return await ReceiveData(_client);
+        }
+        // ReSharper disable once IteratorNeverReturns
     }
 
     public async Task<string?> SendMessageAsync(string message)
