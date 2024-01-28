@@ -30,10 +30,8 @@ public class ClientConnectionService:IClientConnectionService
         _client = new TcpClient(serverIp, port);
     }
 
-    //Locking due to yield keyword
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
-        //Console.WriteLine("GetMessagesAsync");
         while (true)
         {
             if (_client.Connected)
@@ -49,7 +47,6 @@ public class ClientConnectionService:IClientConnectionService
 
     public async Task<string?> SendMessageAsync(string message)
     {
-        //Console.WriteLine("SendMessagesAsync");
         await SendData(_client,message);
         return message;
     }
@@ -73,7 +70,6 @@ public class ClientConnectionService:IClientConnectionService
             }
     
             receivedData = new string(buffer, 0, bytesRead);
-            //receivedData = ((IPEndPoint)client.Client.RemoteEndPoint).Address.MapToIPv4() + ": " + receivedData;
             break;
         }
     
@@ -82,14 +78,14 @@ public class ClientConnectionService:IClientConnectionService
 
     static async Task SendData(TcpClient client,string message)
     {
-        //Console.WriteLine("Enter a message: ");
-
         NetworkStream stream = client.GetStream();
+        
         byte[] data = Encoding.UTF8.GetBytes(message);
+        
         await stream.WriteAsync(data, 0, data.Length);
+        
         await stream.FlushAsync();
-        //Console.WriteLine("Bura isledi :)");
     }
+
     
-    //private string GetSenderIP()
 }

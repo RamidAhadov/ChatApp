@@ -36,11 +36,8 @@ public class ServerConnectionService:IServerConnectionService
     public async Task<string?> SendMessageAsync(string message)
     {
         message = ((IPEndPoint)_tcpListener.LocalEndpoint).Address.MapToIPv4() + ": " + message;
-        var data = Encoding.UTF8.GetBytes(message);
-        foreach (var client in _clients!)
-        {
-            await client.SendAsync(data);
-        }
+        
+        await SendToClientsAsync(message);
         
         return message;
     }
@@ -50,21 +47,19 @@ public class ServerConnectionService:IServerConnectionService
     //Might be due to multithreading issue.
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
-        bool connected = true;
         using (var client = await _tcpListener.AcceptSocketAsync())
         {
-            while (connected)
+            while (true)
             {
                 var message = await Task.Run(() => ReceiveMessages(client));
                 message = ((IPEndPoint)client.RemoteEndPoint).Address + ": " + message;
                 if (message == null)
                 {
-                    //Try to remove "connected" variable
-                    _clients.Remove(client);
-                    connected = false; break;
+                    _clients.Remove(client); break;
                 }
                 else
                 {
+                    
                     yield return message;
                 }
             }
@@ -81,12 +76,11 @@ public class ServerConnectionService:IServerConnectionService
             byte[] data = new byte[100];
 
             int bytesRead = await client.ReceiveAsync(data, SocketFlags.None);
-            Console.WriteLine("Received async!");
 
             if (bytesRead > 0)
             {
                 string result = Encoding.UTF8.GetString(data, 0, bytesRead);
-                //Console.WriteLine(result);
+                await SendToClientsAsync(result, client);
                 return result;
             }
 
@@ -107,6 +101,29 @@ public class ServerConnectionService:IServerConnectionService
         if (!_clients.Contains(client))
         {
             _clients.Add(client);
+        }
+    }
+    
+    private async Task SendToClientsAsync(string message)
+    {
+        var data = Encoding.UTF8.GetBytes(message);
+        foreach (var client in _clients!)
+        {
+            if (client.Connected)
+            {
+                await client.SendAsync(data);
+            }
+        }
+    }
+    private async Task SendToClientsAsync(string message,Socket sender)
+    {
+        var data = Encoding.UTF8.GetBytes(message);
+        foreach (var client in _clients!)
+        {
+            if (client.Connected && client != sender)
+            {
+                await client.SendAsync(data);
+            }
         }
     }
 }
