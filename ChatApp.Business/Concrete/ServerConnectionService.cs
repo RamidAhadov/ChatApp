@@ -41,29 +41,44 @@ public class ServerConnectionService:IServerConnectionService
         
         return message;
     }
-    
+
+
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
         //Temporary
         Console.WriteLine("Waiting for new client...");
-        using (var client = await _tcpListener.AcceptSocketAsync())
+        var client = await _tcpListener.AcceptSocketAsync();
+        //Temporary
+        Console.WriteLine("New client accepted!");
+        var endPointIp = TransmissionControlProtocol.GetEndpointFromClient(client);
+        
+        while (client.Connected) 
         {
-            //Temporary
-            Console.WriteLine("New client accepted!");
-            string endPointIP = TransmissionControlProtocol.GetEndpointFromClient(client);
-        
-            while (client.Connected)
-            {
                 var message = await Task.Run(() => ReceiveMessages(client));
-                message = endPointIP + ": " + message;
-
-                yield return message;
-            }
-        
-            _clients.Remove(client);
-            yield return endPointIP + " disconnected.";
+                message = endPointIp + ": " + message;
+    
+                yield return message; 
         }
-        // ReSharper disable once IteratorNeverReturns
+        
+        _clients.Remove(client);
+        yield return endPointIp + " disconnected.";
+    }
+
+    private async Task<string> GetMessagesAfterAccept(Socket client)
+    {
+        Console.WriteLine("New client accepted!");
+        string endPointIP = TransmissionControlProtocol.GetEndpointFromClient(client);
+        
+        while (client.Connected)
+        {
+            var message = await Task.Run(() => ReceiveMessages(client));
+            message = endPointIP + ": " + message;
+    
+            return message;
+        }
+        
+        _clients.Remove(client);
+        return endPointIP + " disconnected.";
     }
 
     private async Task<string?> ReceiveMessages(Socket client)

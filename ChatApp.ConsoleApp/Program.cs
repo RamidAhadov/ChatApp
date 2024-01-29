@@ -46,10 +46,31 @@ internal class Program
         Task receive = Task.Run(ReceiveMessagesAsync);
         
         Task send =  Task.Run(SendMessagesAsync);
+        
+        // var receive = ReceiveMessagesAsync();
+        // var send = SendMessagesAsync();
 
         await Task.WhenAll(receive, send);
     }
     
+
+    // static async Task ReceiveMessagesAsync()
+    // {
+    //     Console.WriteLine("Receive " + Thread.CurrentThread.ManagedThreadId);
+    //
+    //     while (true)
+    //     {
+    //         var task = Task.Run(async () =>
+    //         {
+    //             await foreach (var message in _connectionService.GetMessagesAsync())
+    //             {
+    //                 Console.WriteLine(message);
+    //             }
+    //         });
+    //
+    //         await task;
+    //     }
+    // }
 
     static async Task ReceiveMessagesAsync()
     {
