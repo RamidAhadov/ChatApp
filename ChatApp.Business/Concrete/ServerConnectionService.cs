@@ -41,28 +41,27 @@ public class ServerConnectionService:IServerConnectionService
         
         return message;
     }
-
     
-    //Server do not accepts second client.
-    //Might be due to multithreading issue.
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
+        //Temporary
+        Console.WriteLine("Waiting for new client...");
         using (var client = await _tcpListener.AcceptSocketAsync())
         {
-            while (true)
+            //Temporary
+            Console.WriteLine("New client accepted!");
+            string endPointIP = TransmissionControlProtocol.GetEndpointFromClient(client);
+        
+            while (client.Connected)
             {
                 var message = await Task.Run(() => ReceiveMessages(client));
-                message = ((IPEndPoint)client.RemoteEndPoint).Address + ": " + message;
-                if (message == null)
-                {
-                    _clients.Remove(client); break;
-                }
-                else
-                {
-                    
-                    yield return message;
-                }
+                message = endPointIP + ": " + message;
+
+                yield return message;
             }
+        
+            _clients.Remove(client);
+            yield return endPointIP + " disconnected.";
         }
         // ReSharper disable once IteratorNeverReturns
     }
