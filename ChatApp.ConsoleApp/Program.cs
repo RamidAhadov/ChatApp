@@ -43,7 +43,8 @@ internal class Program
         _connectionService.EstablishConnection();
         Console.WriteLine("Connection successfully established.");
         
-        Task receive = Task.Run(ReceiveMessagesAsync);
+        //Task receive = Task.Run(ReceiveMessagesAsync);
+        Task receive = Receive();
         
         Task send =  Task.Run(SendMessagesAsync);
         
@@ -52,7 +53,11 @@ internal class Program
 
         await Task.WhenAll(receive, send);
     }
-    
+
+    private static async Task Receive()
+    {
+       await Task.Run(ReceiveMessagesAsync);
+    }
 
     // static async Task ReceiveMessagesAsync()
     // {
@@ -72,15 +77,21 @@ internal class Program
     //     }
     // }
 
+    // static async Task ReceiveMessagesAsync()
+    // {
+    //     Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
+    //     while (true)
+    //     {
+    //         Console.WriteLine(await _connectionService.GetMessagesAsync());
+    //     }
+    // }
+
     static async Task ReceiveMessagesAsync()
     {
         Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
-        while (true)
+        await foreach (var message in _connectionService.GetMessagesAsync())
         {
-            await foreach (var message in _connectionService.GetMessagesAsync())
-            {
-                Console.WriteLine(message);
-            }
+            Console.WriteLine(message);
         }
     }
 
