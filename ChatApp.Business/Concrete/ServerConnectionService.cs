@@ -42,95 +42,26 @@ public class ServerConnectionService:IServerConnectionService
         
         return message;
     }
-
+    
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
-        Console.WriteLine("Waiting for new client..."); //Checkpoint
         var client = await _tcpListener.AcceptSocketAsync();
 
-        //await Task.Run(() => WriteMessages(client));
-    
-        await foreach (var nextClientMessage in GetMessagesAsync())
-        {
-            yield return nextClientMessage;
-        }
-    
         await foreach (var message in GetMessagesAfterAccept(client))
         {
             yield return message;
         }
     }
 
-    private async Task WriteMessages(Socket client)
+    private async IAsyncEnumerable<Socket> AcceptedSockets()
     {
-        await foreach (var nextClientMessage in GetMessagesAsync())
+        while (true)
         {
-            Console.WriteLine(nextClientMessage);
-        }
-    
-        await foreach (var message in GetMessagesAfterAccept(client))
-        {
-            Console.WriteLine(message);
+            Console.WriteLine("Waiting for new client..."); //Checkpoint
+            yield return await _tcpListener.AcceptSocketAsync();
         }
     }
 
-    // public async IAsyncEnumerable<string?> GetMessagesAsync()
-    // {
-    //     Console.WriteLine("Waiting for new client...");
-    //
-    //     while (true)
-    //     {
-    //         var client = await _tcpListener.AcceptSocketAsync();
-    //
-    //         var nextClientTask = _tcpListener.AcceptSocketAsync();
-    //
-    //         await foreach (var message in GetMessagesAfterAccept(client))
-    //         {
-    //             yield return message;
-    //         }
-    //
-    //         _ = nextClientTask.ContinueWith(async t =>
-    //         {
-    //             var nextClient = await t;
-    //
-    //             if (nextClient != null)
-    //             {
-    //                 await foreach (var nextMessage in GetMessagesAfterAccept(nextClient))
-    //                 {
-    //                     yield return nextMessage;
-    //                 }
-    //             }
-    //         });
-    //     }
-    // }
-    
-    //No affect  
-    // public async IAsyncEnumerable<string?> GetMessagesAsync()
-    // {
-    //     Console.WriteLine("Waiting for new client...");
-    //
-    //     while (true)
-    //     {
-    //         var client = await _tcpListener.AcceptSocketAsync();
-    //
-    //         var nextClientTask = _tcpListener.AcceptSocketAsync();
-    //
-    //         await foreach (var message in GetMessagesAfterAccept(client))
-    //         {
-    //             yield return message;
-    //         }
-    //
-    //         var nextClient = await nextClientTask;
-    //         if (nextClient != null)
-    //         {
-    //             await foreach (var nextMessage in GetMessagesAfterAccept(nextClient))
-    //             {
-    //                 yield return nextMessage;
-    //             }
-    //         }
-    //     }
-    // }
-    
     private async IAsyncEnumerable<string?> GetMessagesAfterAccept(Socket client)
     {
         Console.WriteLine("New client accepted!");
@@ -147,36 +78,6 @@ public class ServerConnectionService:IServerConnectionService
         _clients.Remove(client);
         yield return endPointIP + " disconnected.";
     }
-    
-    // public async IAsyncEnumerable<string?> GetMessagesAsync()
-    // {
-    //     Console.WriteLine("Waiting for new client...");
-    //     var client = await _tcpListener.AcceptSocketAsync();
-    //
-    //     await foreach (var message in GetMessagesAfterAccept(client))
-    //     {
-    //         yield return message;
-    //     }
-    // }
-
-    
-    
-    // private async IAsyncEnumerable<string> GetMessagesAfterAccept(Socket client)
-    // {
-    //     Console.WriteLine("New client accepted!");
-    //     string endPointIP = TransmissionControlProtocol.GetEndpointFromClient(client);
-    //     
-    //     while (client.Connected)
-    //     {
-    //         var message = await Task.Run(() => ReceiveMessages(client));
-    //         message = endPointIP + ": " + message;
-    //
-    //         yield return message;
-    //     }
-    //     
-    //     _clients.Remove(client);
-    //     yield return endPointIP + " disconnected.";
-    // }
 
     private async Task<string?> ReceiveMessages(Socket client)
     {

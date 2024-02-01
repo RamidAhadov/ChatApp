@@ -11,15 +11,10 @@ internal class Program
     private static IConnectionService _connectionService;
     private static ICheckPortService _portService;
     private static IConnectionParameter _connectionParameter;
-    static async Task Main(string[] args)
-    {
-        var builder = new ContainerBuilder(); 
-    
-        builder.RegisterModule(new AutofacBusinessModule());
-    
-        var container = builder.Build();
 
-        await using var scope = container.BeginLifetimeScope();
+    private static async Task Main(string[] args)
+    {
+        var scope = Scope();
 
         _portService = scope.Resolve<ICheckPortService>();
 
@@ -43,50 +38,15 @@ internal class Program
         _connectionService.EstablishConnection();
         Console.WriteLine("Connection successfully established.");
         
-        //Task receive = Task.Run(ReceiveMessagesAsync);
-        Task receive = Receive();
+        //Try to use AcceptSocket loop here
+        Task receive = Task.Run(ReceiveMessagesAsync);
         
         Task send =  Task.Run(SendMessagesAsync);
-        
-        // var receive = ReceiveMessagesAsync();
-        // var send = SendMessagesAsync();
 
         await Task.WhenAll(receive, send);
     }
 
-    private static async Task Receive()
-    {
-       await Task.Run(ReceiveMessagesAsync);
-    }
-
-    // static async Task ReceiveMessagesAsync()
-    // {
-    //     Console.WriteLine("Receive " + Thread.CurrentThread.ManagedThreadId);
-    //
-    //     while (true)
-    //     {
-    //         var task = Task.Run(async () =>
-    //         {
-    //             await foreach (var message in _connectionService.GetMessagesAsync())
-    //             {
-    //                 Console.WriteLine(message);
-    //             }
-    //         });
-    //
-    //         await task;
-    //     }
-    // }
-
-    // static async Task ReceiveMessagesAsync()
-    // {
-    //     Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
-    //     while (true)
-    //     {
-    //         Console.WriteLine(await _connectionService.GetMessagesAsync());
-    //     }
-    // }
-
-    static async Task ReceiveMessagesAsync()
+    private static async Task ReceiveMessagesAsync()
     {
         Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
         await foreach (var message in _connectionService.GetMessagesAsync())
@@ -95,7 +55,7 @@ internal class Program
         }
     }
 
-    static async Task SendMessagesAsync()
+    private static async Task SendMessagesAsync()
     {
         Console.WriteLine("Send "+Thread.CurrentThread.ManagedThreadId);
         while (true)
@@ -104,5 +64,16 @@ internal class Program
             if (message != null)
                 await _connectionService.SendMessageAsync(message);
         }
+    }
+
+    private static ILifetimeScope Scope()
+    {
+        var builder = new ContainerBuilder(); 
+    
+        builder.RegisterModule(new AutofacBusinessModule());
+    
+        var container = builder.Build();
+
+        return container.BeginLifetimeScope();
     }
 }
