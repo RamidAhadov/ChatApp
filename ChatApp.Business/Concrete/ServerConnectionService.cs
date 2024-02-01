@@ -13,8 +13,8 @@ public class ServerConnectionService:IServerConnectionService
 {
     private readonly IConnectionParameter _parameter;
 #pragma warning disable CS0649
-    private List<Socket>? _clients;
-    private TcpListener? _tcpListener;
+    private static List<Socket>? _clients;
+    private static TcpListener? _tcpListener;
 #pragma warning restore CS0649
     //private static object _lockObject = new object();
 
@@ -42,7 +42,24 @@ public class ServerConnectionService:IServerConnectionService
         
         return message;
     }
-    
+
+    public async IAsyncEnumerable<Socket> AcceptClientsAsync()
+    {
+        while (true)
+        {
+            Console.WriteLine("Waiting for new client... (Multi)");
+            yield return await _tcpListener.AcceptSocketAsync();
+        }
+    }
+
+    public async IAsyncEnumerable<string> ReceiveMessagesMultiClientsAsync(Socket client)
+    {
+        await foreach (var message in GetMessagesAfterAccept(client))
+        {
+            yield return message;
+        }
+    }
+
     public async IAsyncEnumerable<string?> GetMessagesAsync()
     {
         var client = await _tcpListener.AcceptSocketAsync();
@@ -53,18 +70,9 @@ public class ServerConnectionService:IServerConnectionService
         }
     }
 
-    private async IAsyncEnumerable<Socket> AcceptedSockets()
-    {
-        while (true)
-        {
-            Console.WriteLine("Waiting for new client..."); //Checkpoint
-            yield return await _tcpListener.AcceptSocketAsync();
-        }
-    }
-
     private async IAsyncEnumerable<string?> GetMessagesAfterAccept(Socket client)
     {
-        Console.WriteLine("New client accepted!");
+        Console.WriteLine("New client accepted! Internal (Method)");
         string endPointIP = TransmissionControlProtocol.GetEndpointFromClient(client);
 
         while (client.Connected)

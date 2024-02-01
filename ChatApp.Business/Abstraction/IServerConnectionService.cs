@@ -4,5 +4,6 @@ namespace ChatApp.Business.Abstraction;
 
 public interface IServerConnectionService:IConnectionService
 {
-    //IAsyncEnumerable<string> GetClientMessagesAsync();
+    IAsyncEnumerable<Socket> AcceptClientsAsync();
+    IAsyncEnumerable<string> ReceiveMessagesMultiClientsAsync(Socket client);
 }

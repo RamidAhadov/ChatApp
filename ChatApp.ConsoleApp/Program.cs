@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System.Net.Sockets;
+using Autofac;
 using ChatApp.Business.Abstraction;
 using ChatApp.Business.DependencyResolvers.Autofac;
 using ChatApp.Configuration.Abstraction;
@@ -11,6 +12,7 @@ internal class Program
     private static IConnectionService _connectionService;
     private static ICheckPortService _portService;
     private static IConnectionParameter _connectionParameter;
+    private static IServerConnectionService _serverConnectionService;
 
     private static async Task Main(string[] args)
     {
@@ -25,6 +27,7 @@ internal class Program
         if (condition)
         {
             _connectionService = scope.ResolveNamed<IConnectionService>("Server");
+            _serverConnectionService = scope.Resolve<IServerConnectionService>();
             
             Console.WriteLine($"Connection will be establish as server. Host: {InternetProtocol.GetCurrentIPv4Address()}:{_connectionParameter.Port}");
         }
@@ -37,10 +40,9 @@ internal class Program
         
         _connectionService.EstablishConnection();
         Console.WriteLine("Connection successfully established.");
-        
-        //Try to use AcceptSocket loop here
-        Task receive = Task.Run(ReceiveMessagesAsync);
-        
+
+        var receive = condition ? Task.Run(ReceiveMessagesMulti) : Task.Run(ReceiveMessagesAsync);
+
         Task send =  Task.Run(SendMessagesAsync);
 
         await Task.WhenAll(receive, send);
@@ -54,7 +56,23 @@ internal class Program
             Console.WriteLine(message);
         }
     }
-
+    private static async Task ReceiveMessagesMulti()
+    {
+        Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
+        await foreach (var client in _serverConnectionService.AcceptClientsAsync())
+        {
+            //await Task.Run(() => ReceiveMessagesMultiClientsAsync(client));
+            _ = Task.Run(() => ReceiveMessagesMultiClientsAsync(client));
+        }
+    }
+    private static async Task ReceiveMessagesMultiClientsAsync(Socket client)
+    {
+        await foreach (var message in _serverConnectionService.ReceiveMessagesMultiClientsAsync(client))
+        {
+            Console.WriteLine(message);
+        }
+    }
+    
     private static async Task SendMessagesAsync()
     {
         Console.WriteLine("Send "+Thread.CurrentThread.ManagedThreadId);
