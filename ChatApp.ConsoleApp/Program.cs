@@ -3,6 +3,7 @@ using Autofac;
 using ChatApp.Business.Abstraction;
 using ChatApp.Business.DependencyResolvers.Autofac;
 using ChatApp.Configuration.Abstraction;
+using ChatApp.ConsoleApp.MagicString;
 using ChatApp.Core.Utilities.Protocols;
 
 namespace ChatApp.ConsoleApp;
@@ -22,35 +23,74 @@ internal class Program
 
         _connectionParameter = scope.Resolve<IConnectionParameter>();
 
-        var condition = _portService.IsListening(_connectionParameter.Port);
+        Console.WriteLine("Please choose connection type. \nLocal or Global");
+        var userResponse = Console.ReadLine()!.ToLower();
+        while (!ResponseControl(userResponse))
+        {
+            Console.WriteLine(ConstantMessages.WrongUserResponse);
+            userResponse = Console.ReadLine()!.ToLower();
+        }
 
+        if (userResponse == "global")
+        {
+            Console.WriteLine("Connection will be establish on local.");
+            Console.WriteLine("Please choose user type. \nServer or Client");
+            
+            var globalUserResponse = Console.ReadLine()!.ToLower();
+            while (!GlobalResponseControl(globalUserResponse))
+            {
+                Console.WriteLine(ConstantMessages.WrongUserResponse);
+                globalUserResponse = Console.ReadLine()!.ToLower();
+            }
+
+            if (globalUserResponse == "server")
+            {
+                await EstablishTcpConnection(scope,true);
+            }
+            else
+            {
+                await EstablishTcpConnection(scope,false);
+            }
+            
+        }
+        else if(userResponse == "local")
+        {
+            Console.WriteLine("Connection will be establish on local.");
+            var condition = _portService.IsListening(_connectionParameter.Port);
+            await EstablishTcpConnection(scope,condition);
+        }
+    }
+
+    
+    private static async Task EstablishTcpConnection(IComponentContext scope,bool condition)
+    {
         if (condition)
         {
             _connectionService = scope.ResolveNamed<IConnectionService>("Server");
             _serverConnectionService = scope.Resolve<IServerConnectionService>();
-            
-            Console.WriteLine($"Connection will be establish as server. Host: {InternetProtocol.GetCurrentIPv4Address()}:{_connectionParameter.Port}");
+
+            Console.WriteLine(
+                $"Connection will be establish as server. Host: {InternetProtocol.GetCurrentIPv4Address()}:{_connectionParameter.Port}");
         }
         else
         {
             _connectionService = scope.ResolveNamed<IConnectionService>("Client");
-            
+
             Console.WriteLine("Connection will be establish as client.\nPlease enter host ip and port.");
         }
-        
+
         _connectionService.EstablishConnection();
         Console.WriteLine("Connection successfully established.");
 
         var receive = condition ? Task.Run(ReceiveMessagesMulti) : Task.Run(ReceiveMessagesAsync);
 
-        Task send =  Task.Run(SendMessagesAsync);
+        Task send = Task.Run(SendMessagesAsync);
 
         await Task.WhenAll(receive, send);
     }
 
     private static async Task ReceiveMessagesAsync()
     {
-        Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
         await foreach (var message in _connectionService.GetMessagesAsync())
         {
             Console.WriteLine(message);
@@ -58,7 +98,6 @@ internal class Program
     }
     private static async Task ReceiveMessagesMulti()
     {
-        Console.WriteLine("Receive "+Thread.CurrentThread.ManagedThreadId);
         await foreach (var client in _serverConnectionService.AcceptClientsAsync())
         {
             //await Task.Run(() => ReceiveMessagesMultiClientsAsync(client));
@@ -75,7 +114,6 @@ internal class Program
     
     private static async Task SendMessagesAsync()
     {
-        Console.WriteLine("Send "+Thread.CurrentThread.ManagedThreadId);
         while (true)
         {
             var message = Console.ReadLine();
@@ -93,5 +131,16 @@ internal class Program
         var container = builder.Build();
 
         return container.BeginLifetimeScope();
+    }
+
+    private static bool ResponseControl(string response)
+    {
+        HashSet<string> responses = new() { "global", "local" };
+        return responses.Contains(response);
+    }
+    private static bool GlobalResponseControl(string response)
+    {
+        HashSet<string> responses = new() { "server", "client" };
+        return responses.Contains(response);
     }
 }
